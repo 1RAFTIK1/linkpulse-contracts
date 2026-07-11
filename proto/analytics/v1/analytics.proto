@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package analytics.v1;
+
+import "events/v1/click_event.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/1RAFTIK1/linkpulse-contracts/gen/go/analytics/v1;analyticsv1";
+
+// AnalyticsService — gRPC-контракт сервиса аналитики.
+//
+// Dashboard получает live-события именно отсюда (StreamLiveClicks), а НЕ читает Kafka
+// напрямую: так подписки на конкретный link_id и fan-out живут в одном месте (Analytics),
+// а Dashboard остаётся тонким WebSocket-адаптером.
+service AnalyticsService {
+  // GetLinkStats — агрегированная статистика по ссылке за период.
+  rpc GetLinkStats(GetLinkStatsRequest) returns (GetLinkStatsResponse);
+
+  // StreamLiveClicks — server-streaming: пока клиент держит стрим, Analytics шлёт
+  // ему каждое новое событие клика по указанной ссылке (in-memory fan-out поверх Kafka-консьюмера).
+  //
+  // Осознанно отступаем от STANDARD-правила именования ответа: стримим ровно тот же
+  // events.v1.ClickEvent, что пришёл из Kafka, — единый контракт события, без лишней обёртки.
+  // buf:lint:ignore RPC_RESPONSE_STANDARD_NAME
+  rpc StreamLiveClicks(StreamLiveClicksRequest) returns (stream events.v1.ClickEvent);
+}
+
+message GetLinkStatsRequest {
+  int64 link_id = 1;
+  google.protobuf.Timestamp from = 2; // начало периода (включительно)
+  google.protobuf.Timestamp to = 3; // конец периода (включительно)
+}
+
+// HourlyBucket — количество кликов за один часовой интервал.
+message HourlyBucket {
+  google.protobuf.Timestamp hour = 1; // начало часа (UTC)
+  int64 click_count = 2;
+}
+
+message GetLinkStatsResponse {
+  int64 link_id = 1;
+  int64 total_clicks = 2;
+  repeated HourlyBucket hourly_breakdown = 3;
+}
+
+message StreamLiveClicksRequest {
+  int64 link_id = 1;
+}

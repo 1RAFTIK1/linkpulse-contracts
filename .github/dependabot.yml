@@ -1,0 +1,14 @@
+version: 2
+updates:
+  # Go-зависимости (runtime сгенерированного кода: grpc, protobuf).
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  # Версии GitHub Actions в воркфлоу.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

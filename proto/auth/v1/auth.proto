@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package auth.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/1RAFTIK1/linkpulse-contracts/gen/go/auth/v1;authv1";
+
+// AuthService — внутренний gRPC-контракт сервиса авторизации.
+//
+// Токены подписаны RS256, и "горячие" пути (напр. редирект) могут проверять подпись
+// локально по публичному ключу без сетевого вызова. ValidateToken — официальный путь
+// для низкочастотных, но чувствительных операций (создание ссылок, авторизация WS):
+// централизованная проверка + возможность отзыва токена.
+service AuthService {
+  rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
+}
+
+message ValidateTokenRequest {
+  // token — внутренний JWT (без префикса "Bearer ").
+  string token = 1;
+}
+
+message ValidateTokenResponse {
+  // valid — прошёл ли токен проверку (подпись, срок, не отозван).
+  bool valid = 1;
+
+  // Ниже поля заполнены только при valid == true.
+  string user_id = 2; // GitHub user id
+  string github_username = 3;
+  google.protobuf.Timestamp expires_at = 4;
+}

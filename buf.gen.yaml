@@ -1,0 +1,19 @@
+# buf.gen.yaml — что и куда генерировать (schema v2).
+# Запуск: buf generate (см. Makefile: make generate).
+version: v2
+
+# Перед генерацией очищаем выходную папку — так в gen/go не остаётся файлов
+# от удалённых .proto, и проверка "сген-код не разошёлся со схемами" в CI честная.
+clean: true
+
+plugins:
+  # protoc-gen-go — типы сообщений (.pb.go). local => берётся из $GOBIN,
+  # версия зафиксирована в go.mod (tool-зависимость), а не "какая-то из интернета".
+  - local: protoc-gen-go
+    out: gen/go
+    opt: paths=source_relative
+
+  # protoc-gen-go-grpc — интерфейсы клиентов/серверов gRPC (_grpc.pb.go).
+  - local: protoc-gen-go-grpc
+    out: gen/go
+    opt: paths=source_relative

@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package events.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// go_package: путь до сгенерированного пакета + короткий алиас (eventsv1),
+// чтобы в Go-коде импорты читались как eventsv1.ClickEvent, а не v1.ClickEvent.
+option go_package = "github.com/1RAFTIK1/linkpulse-contracts/gen/go/events/v1;eventsv1";
+
+// ClickEvent — единица данных о переходе по короткой ссылке.
+//
+// Один и тот же тип используется в двух местах:
+//   1) как payload сообщения в Kafka (топик link-clicks), сериализованный protobuf;
+//   2) как элемент server-streaming ответа AnalyticsService.StreamLiveClicks.
+//
+// Так контракт события ровно один, и Dashboard видит те же поля, что пришли из Kafka.
+message ClickEvent {
+  // event_id — уникальный идентификатор именно события клика (Snowflake ID,
+  // тот же генератор, что и для ссылок). Нужен для идемпотентного консьюма в
+  // Analytics: при ретраях/ребалансе Kafka одно и то же сообщение может прийти
+  // дважды — Analytics пишет клики с PRIMARY KEY = event_id и дедупит по нему.
+  int64 event_id = 1;
+
+  // link_id — Snowflake ID ссылки (совпадает с links.id в Link service).
+  int64 link_id = 2;
+
+  // short_code — base62-код, он же ключ партиционирования в Kafka
+  // (гарантирует порядок событий одной ссылки).
+  string short_code = 3;
+
+  // original_url — куда ведёт ссылка (дублируем в событии, чтобы Analytics/Dashboard
+  // не ходили за ней в Link service).
+  string original_url = 4;
+
+  // clicked_at — момент перехода (UTC).
+  google.protobuf.Timestamp clicked_at = 5;
+
+  // referrer — HTTP Referer перехода ("" если отсутствует).
+  string referrer = 6;
+
+  // ip_hash — sha256(salt + client_ip). IP в открытом виде не храним и не передаём
+  // (приватность/GDPR-гигиена). Соль общая серверная, задаётся конфигом.
+  string ip_hash = 7;
+
+  // user_agent — сырой User-Agent клиента.
+  string user_agent = 8;
+
+  // country — ISO 3166-1 alpha-2 код страны, определённый по IP через MaxMind GeoLite2
+  // в Link service ДО хеширования IP. "" если страну определить не удалось.
+  string country = 9;
+}

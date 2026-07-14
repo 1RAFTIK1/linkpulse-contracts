@@ -18,7 +18,7 @@ jobs:
     name: proto lint / breaking / codegen
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Setup Go
         uses: actions/setup-go@v6

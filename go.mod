@@ -1,6 +1,6 @@
 module github.com/1RAFTIK1/linkpulse-contracts
 
-go 1.26.1
+go 1.26.5
 
 require (
 	google.golang.org/grpc v1.82.0
